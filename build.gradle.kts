@@ -26,11 +26,17 @@ repositories {
 }
 
 dependencies {
+    val ktorm_version = "4.0.0"
+    val tomcat_version = "2.3.11"
+
     implementation("io.ktor:ktor-server-call-logging-jvm")
     implementation("io.ktor:ktor-server-core-jvm")
     implementation("io.ktor:ktor-server-host-common-jvm")
     implementation("io.ktor:ktor-serialization-kotlinx-json-jvm")
     implementation("io.ktor:ktor-server-content-negotiation-jvm")
+    implementation("org.ktorm:ktorm-core:$ktorm_version")
+    implementation("io.ktor:ktor-server-tomcat-jvm:$tomcat_version")
+    implementation("mysql:mysql-connector-java:8.0.33")
     implementation("org.mongodb:mongodb-driver-core:$mongo_version")
     implementation("org.mongodb:mongodb-driver-sync:$mongo_version")
     implementation("org.mongodb:bson:$mongo_version")

@@ -1,20 +1,26 @@
 package com.example.application
 
 import com.example.application.plugins.*
+import com.example.data.route.routeUser
 import io.ktor.server.application.*
+
 
 fun main(args: Array<String>) {
     io.ktor.server.netty.EngineMain.main(args)
 }
 
+
 //fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
 
+
 fun Application.module() {
-    configureMonitoring()
+//    configureDatabase()
     configureSerialization()
-    configureDatabases()
-    configureTemplating()
-    configureHTTP()
     configureSecurity()
     configureRouting()
+    routeUser()
+//    configureMonitoring()
+//    configureTemplating()
+//    configureHTTP()
 }
+

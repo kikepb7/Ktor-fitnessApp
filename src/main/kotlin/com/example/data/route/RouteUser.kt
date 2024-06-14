@@ -10,7 +10,7 @@ import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import org.ktorm.database.Database
-import org.ktorm.dsl.insert
+import org.ktorm.dsl.*
 
 fun Application.routeUser() {
 
@@ -18,9 +18,10 @@ fun Application.routeUser() {
 
     routing {
         get("/") {
-            call.respondText("Werlcome to Ktor MySql")
+            call.respondText("Welcome to Ktor-Fitness MySql")
         }
 
+        // CREATE
         post("/register") {
             val user: UserModel = call.receive()
             val noOfRowsAffected = db.insert(table = UserTable) {
@@ -42,7 +43,129 @@ fun Application.routeUser() {
                 // Fail
                 call.respond(
                     HttpStatusCode.BadRequest,
-                    GenericResponse(isSuccess = true, data = "Error to register the user")
+                    GenericResponse(isSuccess = false, data = "Error to register the user")
+                )
+            }
+        }
+
+        // READ
+        get("/users") {
+            val list = db.from(UserTable)
+                .select()
+                .map {
+                    UserModel(
+                        id = it[UserTable.id],
+                        name = it[UserTable.name],
+                        lastName = it[UserTable.lastName],
+                        email = it[UserTable.email],
+                        password = it[UserTable.password],
+                        profileImage = it[UserTable.profileImage],
+                        apikey = it[UserTable.apikey]
+                    )
+                }
+
+            if (list.isNotEmpty()) {
+                call.respond(
+                    HttpStatusCode.OK,
+                    GenericResponse(isSuccess = true, data = list)
+                )
+            } else {
+                call.respond(
+                    HttpStatusCode.OK,
+                    GenericResponse(isSuccess = false, data = null)
+                )
+            }
+        }
+
+        get("user/{userId}") {
+            val userIdStr = call.parameters["userId"]
+            val userIdInt = userIdStr?.toInt() ?: -1
+
+            val user = db.from(UserTable)
+                .select()
+                .where {
+                    UserTable.id eq userIdInt
+                }
+                .map {
+                    UserModel(
+                        id = it[UserTable.id],
+                        name = it[UserTable.name],
+                        lastName = it[UserTable.lastName],
+                        email = it[UserTable.email],
+                        password = it[UserTable.password],
+                        profileImage = it[UserTable.profileImage],
+                        apikey = it[UserTable.apikey]
+                    )
+                }
+                .firstOrNull()
+
+            if (user != null) {
+                call.respond(
+                    HttpStatusCode.OK,
+                    GenericResponse(isSuccess = true, data = user)
+                )
+            } else {
+                call.respond(
+                    HttpStatusCode.OK,
+                    GenericResponse(isSuccess = false, data = null)
+                )
+            }
+        }
+
+        // UPDATE
+        put("user/{userId}") {
+            val userIdStr = call.parameters["userId"]
+            val userIdInt = userIdStr?.toInt() ?: -1
+            val userReq: UserModel = call.receive()
+
+            val noOfRowsAffected = db.update(table = UserTable) {
+                set(it.name, userReq.name)
+                set(it.lastName, userReq.lastName)
+                set(it.email, userReq.email)
+                set(it.password, userReq.password)
+                set(it.profileImage, userReq.profileImage)
+                set(it.apikey, userReq.apikey)
+
+                where {
+                    it.id eq userIdInt
+                }
+            }
+
+            if (noOfRowsAffected > 0) {
+                // Success
+                call.respond(
+                    HttpStatusCode.OK,
+                    GenericResponse(isSuccess = true, data = "$noOfRowsAffected rows are affected")
+                )
+            } else {
+                // Fail
+                call.respond(
+                    HttpStatusCode.BadRequest,
+                    GenericResponse(isSuccess = false, data = "Error to update the user")
+                )
+            }
+        }
+
+        // DELETE
+        delete("user/{userId}") {
+            val userIdStr = call.parameters["userId"]
+            val userIdInt = userIdStr?.toInt() ?: -1
+
+            val noOfRowsAffected = db.delete(table = UserTable) {
+                it.id eq userIdInt
+            }
+
+            if (noOfRowsAffected > 0) {
+                // Success
+                call.respond(
+                    HttpStatusCode.OK,
+                    GenericResponse(isSuccess = true, data = "$noOfRowsAffected rows are affected")
+                )
+            } else {
+                // Fail
+                call.respond(
+                    HttpStatusCode.BadRequest,
+                    GenericResponse(isSuccess = false, data = "Error to delete the user")
                 )
             }
         }

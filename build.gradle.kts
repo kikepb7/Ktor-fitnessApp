@@ -40,8 +40,13 @@ dependencies {
     implementation("org.mongodb:mongodb-driver-core:$mongo_version")
     implementation("org.mongodb:mongodb-driver-sync:$mongo_version")
     implementation("org.mongodb:bson:$mongo_version")
+
+    // Exposed
     implementation("org.jetbrains.exposed:exposed-core:$exposed_version")
+    implementation("org.jetbrains.exposed:exposed-dao:$exposed_version")
     implementation("org.jetbrains.exposed:exposed-jdbc:$exposed_version")
+    implementation("org.jetbrains.exposed:exposed-jodatime:$exposed_version")
+
     implementation("com.h2database:h2:$h2_version")
     implementation("io.ktor:ktor-server-thymeleaf-jvm")
     implementation("io.ktor:ktor-server-mustache-jvm")

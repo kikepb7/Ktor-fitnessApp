@@ -1,7 +1,9 @@
 package com.example.application
 
 import com.example.application.plugins.*
+import com.example.data.route.routeRoutine
 import com.example.data.route.routeUser
+import com.example.data.route.routeUserRoutine
 import io.ktor.server.application.*
 
 
@@ -19,6 +21,8 @@ fun Application.module() {
     configureSecurity()
     configureRouting()
     routeUser()
+    routeRoutine()
+    routeUserRoutine()
 //    configureMonitoring()
 //    configureTemplating()
 //    configureHTTP()

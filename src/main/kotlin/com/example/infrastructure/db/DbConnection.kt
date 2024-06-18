@@ -1,6 +1,6 @@
-package com.example.data.application.datasource.db
+package com.example.infrastructure.db
 
-import org.ktorm.database.Database
+import org.jetbrains.exposed.sql.Database
 
 object DbConnection {
     private val db: Database? = null

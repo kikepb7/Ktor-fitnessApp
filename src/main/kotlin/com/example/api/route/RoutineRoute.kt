@@ -1,7 +1,7 @@
-package com.example.data.route
+package com.example.api.route
 
 import com.example.data.entity.RoutineEntity
-import com.example.data.util.GenericResponse
+import com.example.api.response.GenericResponse
 import com.example.domain.model.RoutineModel
 import io.ktor.http.*
 import io.ktor.server.application.*
@@ -12,7 +12,9 @@ import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.transactions.transaction
 
-fun Application.routeRoutine() {
+fun Application.routeRoutine(
+    db: Database
+) {
 
     routing {
 
@@ -21,7 +23,7 @@ fun Application.routeRoutine() {
             try {
                 val routineModel = call.receive<RoutineModel>()
 
-                val routineId = transaction {
+                val routineId = transaction(db) {
                     RoutineEntity.insert {
                         it[name] = routineModel.name
                         it[description] = routineModel.description
@@ -51,7 +53,7 @@ fun Application.routeRoutine() {
         // READ
         get("/routines") {
             try {
-                val routines = transaction {
+                val routines = transaction(db) {
                     RoutineEntity.selectAll().map {
                         RoutineModel(
                             name = it[RoutineEntity.name],
@@ -92,7 +94,7 @@ fun Application.routeRoutine() {
             }
 
             try {
-                val routine = transaction {
+                val routine = transaction(db) {
                     RoutineEntity.select { RoutineEntity.id eq routineId }
                         .map {
                             RoutineModel(
@@ -134,7 +136,7 @@ fun Application.routeRoutine() {
             try {
                 val routineModel = call.receive<RoutineModel>()
 
-                val updateRows = transaction {
+                val updateRows = transaction(db) {
                     RoutineEntity.update({ RoutineEntity.id eq id }) {
                         it[name] = routineModel.name
                         it[description] = routineModel.description
@@ -173,7 +175,7 @@ fun Application.routeRoutine() {
             }
 
             try {
-                val deleteRows = transaction {
+                val deleteRows = transaction(db) {
                     RoutineEntity.deleteWhere { RoutineEntity.id eq id }
                 }
 

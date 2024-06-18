@@ -1,8 +1,9 @@
-package com.example.data.route
+package com.example.api.route
 
 import com.example.data.entity.RoutineEntity
 import com.example.data.entity.UserEntity
-import com.example.data.util.GenericResponse
+import com.example.api.response.GenericResponse
+import com.example.data.repository.UserRepositoryImpl
 import com.example.domain.model.UserModel
 import io.ktor.http.*
 import io.ktor.server.application.*
@@ -13,7 +14,10 @@ import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.transactions.transaction
 
-fun Application.routeUser() {
+fun Application.routeUser(
+    db: Database,
+    userRepositoryImpl: UserRepositoryImpl
+) {
 
     routing {
         get("/") {
@@ -25,7 +29,7 @@ fun Application.routeUser() {
             try {
                 val userModel = call.receive<UserModel>()
 
-                val userId = transaction {
+                val userId = transaction(db) {
                     UserEntity.insert {
                         it[name] = userModel.name
                         it[lastName] = userModel.lastName
@@ -57,7 +61,7 @@ fun Application.routeUser() {
         // READ
         get("/users") {
             try {
-                val users = transaction {
+                val users = transaction(db) {
                     UserEntity.selectAll().map {
                         UserModel(
                             name = it[UserEntity.name],
@@ -100,19 +104,7 @@ fun Application.routeUser() {
             }
 
             try {
-                val user = transaction {
-                    UserEntity.select { UserEntity.id eq userId }
-                        .map {
-                            UserModel(
-                                name = it[UserEntity.name],
-                                lastName = it[UserEntity.lastName],
-                                email = it[UserEntity.email],
-                                password = it[UserEntity.password],
-                                profileImage = it[UserEntity.profileImage]
-                            )
-                        }
-                        .singleOrNull()
-                }
+                val user = userRepositoryImpl.findById(userId = userId)
 
                 if (user != null) {
                     call.respond(HttpStatusCode.OK, user)
@@ -144,7 +136,7 @@ fun Application.routeUser() {
             try {
                 val userModel = call.receive<UserModel>()
 
-                val updateRows = transaction {
+                val updateRows = transaction(db) {
                     RoutineEntity.update({ UserEntity.id eq id }) {
                         it[UserEntity.name] = userModel.name
                         it[UserEntity.lastName] = userModel.lastName
@@ -185,7 +177,7 @@ fun Application.routeUser() {
             }
 
             try {
-                val deleteRows = transaction {
+                val deleteRows = transaction(db) {
                     UserEntity.deleteWhere { UserEntity.id eq id }
                 }
 

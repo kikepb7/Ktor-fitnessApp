@@ -1,19 +1,16 @@
 package com.example.api.route
 
-import com.example.data.entity.RoutineEntity
 import com.example.api.response.GenericResponse
+import com.example.data.repository.RoutineRepositoryImpl
 import com.example.domain.model.RoutineModel
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
-import org.jetbrains.exposed.sql.*
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
-import org.jetbrains.exposed.sql.transactions.transaction
 
 fun Application.routeRoutine(
-    db: Database
+    routineRepositoryImpl: RoutineRepositoryImpl
 ) {
 
     routing {
@@ -22,14 +19,7 @@ fun Application.routeRoutine(
         post("/routine-register") {
             try {
                 val routineModel = call.receive<RoutineModel>()
-
-                val routineId = transaction(db) {
-                    RoutineEntity.insert {
-                        it[name] = routineModel.name
-                        it[description] = routineModel.description
-                        it[goal] = routineModel.goal
-                    } get RoutineEntity.id
-                }
+                val routineId = routineRepositoryImpl.registerRoutine(routineModel = routineModel)
 
                 if (routineId != null) {
                     call.respond(
@@ -53,15 +43,7 @@ fun Application.routeRoutine(
         // READ
         get("/routines") {
             try {
-                val routines = transaction(db) {
-                    RoutineEntity.selectAll().map {
-                        RoutineModel(
-                            name = it[RoutineEntity.name],
-                            description = it[RoutineEntity.description],
-                            goal = it[RoutineEntity.goal]
-                        )
-                    }
-                }
+                val routines = routineRepositoryImpl.findRoutines()
 
                 if (routines.isNotEmpty()) {
                     call.respond(
@@ -94,17 +76,7 @@ fun Application.routeRoutine(
             }
 
             try {
-                val routine = transaction(db) {
-                    RoutineEntity.select { RoutineEntity.id eq routineId }
-                        .map {
-                            RoutineModel(
-                                name = it[RoutineEntity.name],
-                                description = it[RoutineEntity.description],
-                                goal = it[RoutineEntity.goal]
-                            )
-                        }
-                        .singleOrNull()
-                }
+                val routine = routineRepositoryImpl.findRoutineById(routineId = routineId)
 
                 if (routine != null) {
                     call.respond(HttpStatusCode.OK, routine)
@@ -135,16 +107,10 @@ fun Application.routeRoutine(
 
             try {
                 val routineModel = call.receive<RoutineModel>()
+                val routineUpdated =
+                    routineRepositoryImpl.updateRoutineById(routineId = id, routineModel = routineModel)
 
-                val updateRows = transaction(db) {
-                    RoutineEntity.update({ RoutineEntity.id eq id }) {
-                        it[name] = routineModel.name
-                        it[description] = routineModel.description
-                        it[goal] = routineModel.goal
-                    }
-                }
-
-                if (updateRows > 0) {
+                if (routineUpdated) {
                     call.respond(
                         HttpStatusCode.OK,
                         GenericResponse(isSuccess = true, data = "Routine updated successfully")
@@ -175,11 +141,9 @@ fun Application.routeRoutine(
             }
 
             try {
-                val deleteRows = transaction(db) {
-                    RoutineEntity.deleteWhere { RoutineEntity.id eq id }
-                }
+                val deleteRows = routineRepositoryImpl.deleteRoutineById(routineId = id)
 
-                if (deleteRows > 0) {
+                if (deleteRows) {
                     call.respond(
                         HttpStatusCode.OK,
                         GenericResponse(isSuccess = true, data = "Routine deleted successfully")

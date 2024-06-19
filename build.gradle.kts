@@ -27,6 +27,7 @@ repositories {
 
 dependencies {
     val ktorm_version = "4.0.0"
+    val ktor_version = "2.3.11"
     val tomcat_version = "2.3.11"
 
     implementation("io.ktor:ktor-server-call-logging-jvm")
@@ -46,6 +47,9 @@ dependencies {
     implementation("org.jetbrains.exposed:exposed-dao:$exposed_version")
     implementation("org.jetbrains.exposed:exposed-jdbc:$exposed_version")
     implementation("org.jetbrains.exposed:exposed-jodatime:$exposed_version")
+
+    // Status pages
+    implementation("io.ktor:ktor-server-status-pages:$ktor_version")
 
     implementation("com.h2database:h2:$h2_version")
     implementation("io.ktor:ktor-server-thymeleaf-jvm")

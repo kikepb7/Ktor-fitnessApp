@@ -1,7 +1,5 @@
 package com.example.api.route
 
-import com.example.data.entity.RoutineEntity
-import com.example.data.entity.UserEntity
 import com.example.api.response.GenericResponse
 import com.example.data.repository.UserRepositoryImpl
 import com.example.domain.model.UserModel
@@ -10,15 +8,11 @@ import io.ktor.server.application.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
-import org.jetbrains.exposed.sql.*
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
-import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.exceptions.ExposedSQLException
 
 fun Application.routeUser(
-    db: Database,
     userRepositoryImpl: UserRepositoryImpl
 ) {
-
     routing {
         get("/") {
             call.respondText("Welcome to Ktor-Fitness MySql")
@@ -28,16 +22,7 @@ fun Application.routeUser(
         post("/user-register") {
             try {
                 val userModel = call.receive<UserModel>()
-
-                val userId = transaction(db) {
-                    UserEntity.insert {
-                        it[name] = userModel.name
-                        it[lastName] = userModel.lastName
-                        it[email] = userModel.email
-                        it[password] = userModel.password
-                        it[profileImage] = userModel.profileImage
-                    } get UserEntity.id
-                }
+                val userId = userRepositoryImpl.registerUser(userModel = userModel)
 
                 if (userId != null) {
                     call.respond(
@@ -55,23 +40,18 @@ fun Application.routeUser(
                     HttpStatusCode.InternalServerError,
                     GenericResponse(isSuccess = false, data = "Internal server error: ${e.message}")
                 )
+            } catch (e: ExposedSQLException) {
+                call.respond(
+                    HttpStatusCode.Conflict,
+                    GenericResponse(isSuccess = false, data = "A user with the same details already exists: ${e.message}")
+                )
             }
         }
 
         // READ
         get("/users") {
             try {
-                val users = transaction(db) {
-                    UserEntity.selectAll().map {
-                        UserModel(
-                            name = it[UserEntity.name],
-                            lastName = it[UserEntity.lastName],
-                            email = it[UserEntity.email],
-                            password = it[UserEntity.password],
-                            profileImage = it[UserEntity.profileImage]
-                        )
-                    }
-                }
+                val users = userRepositoryImpl.findUsers()
 
                 if (users.isNotEmpty()) {
                     call.respond(
@@ -104,7 +84,7 @@ fun Application.routeUser(
             }
 
             try {
-                val user = userRepositoryImpl.findById(userId = userId)
+                val user = userRepositoryImpl.findUserById(userId = userId)
 
                 if (user != null) {
                     call.respond(HttpStatusCode.OK, user)
@@ -135,18 +115,9 @@ fun Application.routeUser(
 
             try {
                 val userModel = call.receive<UserModel>()
+                val userUpdated = userRepositoryImpl.updateUserById(userId = id, userModel = userModel)
 
-                val updateRows = transaction(db) {
-                    RoutineEntity.update({ UserEntity.id eq id }) {
-                        it[UserEntity.name] = userModel.name
-                        it[UserEntity.lastName] = userModel.lastName
-                        it[UserEntity.email] = userModel.email
-                        it[UserEntity.password] = userModel.password
-                        it[UserEntity.profileImage] = userModel.profileImage
-                    }
-                }
-
-                if (updateRows > 0) {
+                if (userUpdated) {
                     call.respond(
                         HttpStatusCode.OK,
                         GenericResponse(isSuccess = true, data = "User updated successfully")
@@ -177,11 +148,9 @@ fun Application.routeUser(
             }
 
             try {
-                val deleteRows = transaction(db) {
-                    UserEntity.deleteWhere { UserEntity.id eq id }
-                }
+                val deleteRows = userRepositoryImpl.deleteUserById(userId = id)
 
-                if (deleteRows > 0) {
+                if (deleteRows) {
                     call.respond(
                         HttpStatusCode.OK,
                         GenericResponse(isSuccess = true, data = "User deleted successfully")
